@@ -3,6 +3,7 @@ import styled from "styled-components";
 
 interface ButtonProps {
   $isDragging: boolean;
+  $isPlaceholder?: boolean;
 }
 
 const Button = styled.button<ButtonProps>`
@@ -14,12 +15,20 @@ const Button = styled.button<ButtonProps>`
   padding: 0;
   border: none;
   border-radius: 4px;
-  background-color: #923ba3;
-  cursor: ${({ $isDragging }) => ($isDragging ? "grabbing" : "grab")};
+  background-color: ${({ $isPlaceholder }) =>
+    $isPlaceholder ? "rgba(146, 59, 163, 0.4)" : "#923ba3"};
+  cursor: ${({ $isDragging, $isPlaceholder }) =>
+    $isPlaceholder ? "default" : $isDragging ? "grabbing" : "grab"};
   user-select: none;
+  position: ${({ $isDragging }) => ($isDragging ? "fixed" : "relative")};
+  z-index: ${({ $isDragging }) => ($isDragging ? 1000 : 1)};
+  pointer-events: ${({ $isDragging, $isPlaceholder }) =>
+    $isDragging || $isPlaceholder ? "none" : "auto"};
+  opacity: ${({ $isPlaceholder }) => ($isPlaceholder ? 0.5 : 1)};
 
   &:hover {
-    background-color: #d0d0d0;
+    background-color: ${({ $isPlaceholder }) =>
+      $isPlaceholder ? "rgba(146, 59, 163, 0.4)" : "#d0d0d0"};
   }
 
   svg {
@@ -28,42 +37,58 @@ const Button = styled.button<ButtonProps>`
   }
 `;
 
+const BlockWrapper = styled.div`
+  position: relative;
+`;
+
 interface BlockProps {
+  id: string;
   icon: string;
   onClick?: () => void;
-  onDragEnd?: (x: number, y: number) => void;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: (id: string, x: number, y: number) => void;
 }
 
-const Block: React.FC<BlockProps> = ({ icon, onClick, onDragEnd }) => {
+const Block: React.FC<BlockProps> = ({
+  id,
+  icon,
+  onClick,
+  onDragStart,
+  onDragEnd,
+}) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsDragging(true);
-    setStartPos({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
+    setPosition({
+      x: e.clientX,
+      y: e.clientY,
     });
+    onDragStart?.(id);
   };
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return;
       setPosition({
-        x: e.clientX - startPos.x,
-        y: e.clientY - startPos.y,
+        x: e.clientX,
+        y: e.clientY,
       });
     },
-    [isDragging, startPos],
+    [isDragging],
   );
 
-  const handleMouseUp = useCallback(() => {
-    if (isDragging) {
-      setIsDragging(false);
-      onDragEnd?.(position.x, position.y);
-    }
-  }, [isDragging, position, onDragEnd]);
+  const handleMouseUp = useCallback(
+    (e: MouseEvent) => {
+      if (isDragging) {
+        setIsDragging(false);
+        onDragEnd?.(id, e.clientX, e.clientY);
+      }
+    },
+    [isDragging, id, onDragEnd],
+  );
 
   useEffect(() => {
     if (isDragging) {
@@ -77,16 +102,30 @@ const Block: React.FC<BlockProps> = ({ icon, onClick, onDragEnd }) => {
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <Button
-      $isDragging={isDragging}
-      onMouseDown={handleMouseDown}
-      onClick={onClick}
-      style={{
-        transform: `translate(${position.x}px, ${position.y}px)`,
-      }}
-    >
-      <img src={icon} alt="" width={20} height={20} draggable={false} />
-    </Button>
+    <BlockWrapper>
+      {/* Static placeholder that stays in place while dragging */}
+      {isDragging && (
+        <Button $isDragging={false} $isPlaceholder={true}>
+          <img src={icon} alt="" width={20} height={20} draggable={false} />
+        </Button>
+      )}
+      {/* The actual draggable block */}
+      <Button
+        $isDragging={isDragging}
+        onMouseDown={handleMouseDown}
+        onClick={!isDragging ? onClick : undefined}
+        style={
+          isDragging
+            ? {
+                left: position.x - 17,
+                top: position.y - 17,
+              }
+            : {}
+        }
+      >
+        <img src={icon} alt="" width={20} height={20} draggable={false} />
+      </Button>
+    </BlockWrapper>
   );
 };
 
