@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
-
+import Block from "../blocks/block";
+import vite from "../../../public/vite.svg";
 // const Title = styled.h1`
 //   text-align: center;
 // `;
@@ -34,12 +35,13 @@ const Column = styled.div`
 interface AssemblyProps {
   // Add your props here
 }
-
 const Assembly: React.FC<AssemblyProps> = (props) => {
   return (
     <Container>
       <ColumnsWrapper>
-        <Column> Column 1 content </Column>
+        <Column>
+          <Block icon={vite}></Block>
+        </Column>
         <Column>Column 2 content </Column>
       </ColumnsWrapper>
     </Container>

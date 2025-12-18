@@ -1,34 +1,39 @@
-// const styles = StyleSheet.create({
-//   button: {
-//     borderRadius: 100,
-//     paddingHorizontal: 14,
-//     paddingVertical: 7,
-//     justifyContent: "center",
-//     alignItems: "center",
-//   },
-//   small: {
-//     minHeight: SMALL_BUTTON_SIZE,
-//     paddingVertical: 4,
-//   },
-//   medium: {
-//     minHeight: MEDIUM_BUTTON_SIZE,
-//   },
-//   large: {
-//     minHeight: LARGE_BUTTON_SIZE,
-//   },
-//   extraLarge: {
-//     minHeight: EXTRA_LARGE_BUTTON_SIZE,
-//   },
-//   row: {
-//     flexDirection: "row",
-//     alignItems: "center",
+import React from "react";
+import styled from "styled-components";
 
-//     gap: 4,
-//   },
-//   loadingText: {
-//     marginLeft: 8,
-//   },
-//   smallText: {
-//     lineHeight: 17,
-//   },
-// });
+const Button = styled.button`
+  width: 34px;
+  height: 34px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background-color: #923ba3;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #d0d0d0;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+`;
+
+interface BlockProps {
+  icon: string;
+  onClick?: () => void;
+}
+
+const Block: React.FC<BlockProps> = ({ icon, onClick }) => {
+  return (
+    <Button onClick={onClick}>
+      <img src={icon} alt="" width={20} height={20}></img>
+    </Button>
+  );
+};
+
+export default Block;
