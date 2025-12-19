@@ -7,12 +7,12 @@ interface ButtonProps {
 }
 
 const Button = styled.button<ButtonProps>`
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0;
+  padding: 3px;
   border: none;
   border-radius: 4px;
   background-color: ${({ $isPlaceholder }) =>
