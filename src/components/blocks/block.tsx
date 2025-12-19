@@ -25,6 +25,7 @@ const Button = styled.button<ButtonProps>`
   pointer-events: ${({ $isDragging, $isPlaceholder }) =>
     $isDragging || $isPlaceholder ? "none" : "auto"};
   opacity: ${({ $isPlaceholder }) => ($isPlaceholder ? 0.5 : 1)};
+  color: #fff;
 
   &:hover {
     background-color: ${({ $isPlaceholder }) =>
@@ -43,18 +44,24 @@ const BlockWrapper = styled.div`
 
 interface BlockProps {
   id: string;
-  icon: string;
+  icon?: string;
+  abrv: string;
   onClick?: () => void;
   onDragStart?: (id: string) => void;
   onDragEnd?: (id: string, x: number, y: number) => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 const Block: React.FC<BlockProps> = ({
   id,
   icon,
+  abrv,
   onClick,
   onDragStart,
   onDragEnd,
+  onMouseEnter,
+  onMouseLeave,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -102,14 +109,18 @@ const Block: React.FC<BlockProps> = ({
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <BlockWrapper>
+    <BlockWrapper onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
       {/* Static placeholder that stays in place while dragging */}
       {isDragging && (
         <Button $isDragging={false} $isPlaceholder={true}>
-          <img src={icon} alt="" width={20} height={20} draggable={false} />
+          {/*{icon !== undefined ||
+            (icon !== null && (
+              <img src={icon} alt="" width={20} height={20} draggable={false} />
+            ))}*/}
+          <span>{`${abrv}`}</span>
         </Button>
       )}
-      {/* The actual draggable block */}
+      {/* The actual draggable block (or clone for provider) */}
       <Button
         $isDragging={isDragging}
         onMouseDown={handleMouseDown}
@@ -123,7 +134,10 @@ const Block: React.FC<BlockProps> = ({
             : {}
         }
       >
-        <img src={icon} alt="" width={20} height={20} draggable={false} />
+        {/*{icon !== null && (
+          <img src={icon} alt="" width={20} height={20} draggable={false} />
+        )}*/}
+        <span>{`${abrv}`}</span>
       </Button>
     </BlockWrapper>
   );

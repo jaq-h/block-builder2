@@ -27,7 +27,7 @@ type OrderType = [
   "take-profit-limit",
   "trailing-stop",
   "trailing-stop-limit",
-  "settle-position",
+  "settle-position", // ???
 ];
 
 type OrderTriggers = {
