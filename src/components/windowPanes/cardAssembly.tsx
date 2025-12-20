@@ -129,8 +129,8 @@ const Row = styled.div<RowProps>`
   }};
   background-size: ${({ $isOver, $isValidTarget }) =>
     $isOver || $isValidTarget ? "20px 20px" : "auto"};
-  animation: ${({ $isOver }) =>
-    $isOver ? "breathing 1.5s ease-in-out infinite" : "none"};
+  animation: ${({ $isOver, $isValidTarget }) =>
+    $isOver || $isValidTarget ? "breathing 1.5s ease-in infinite" : "none"};
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
@@ -146,6 +146,37 @@ const Row = styled.div<RowProps>`
     border-width 0.2s,
     padding 0.2s,
     background-image 0.2s;
+`;
+
+const UtilityRow = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  border-top: 1px solid #444;
+`;
+
+const UtilityButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background-color: rgba(80, 80, 80, 0.5);
+  color: #ccc;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+
+  &:hover {
+    background-color: rgba(100, 100, 100, 0.7);
+    border-color: #888;
+    color: #fff;
+  }
 `;
 
 const ProviderRow = styled.div`
@@ -242,6 +273,35 @@ const Assembly: React.FC = () => {
     col: number;
     row: number;
   } | null>(null);
+  const [hoveredGridCell, setHoveredGridCell] = useState<{
+    col: number;
+    row: number;
+  } | null>(null);
+
+  const handleGridCellMouseEnter = (colIndex: number, rowIndex: number) => {
+    if (!isDragging) {
+      setHoveredGridCell({ col: colIndex, row: rowIndex });
+    }
+  };
+
+  const handleGridCellMouseLeave = () => {
+    setHoveredGridCell(null);
+  };
+
+  // Check if a provider block should be highlighted based on hovered grid cell
+  const isProviderBlockHighlighted = (block: ProviderBlockData): boolean => {
+    if (isDragging || !hoveredGridCell) return false;
+
+    // Check if the block can be placed in the hovered cell
+    const canPlaceInRow = block.allowedRows.includes(hoveredGridCell.row);
+    const cellIsValid = isCellValidForPlacement(
+      hoveredGridCell.col,
+      hoveredGridCell.row,
+      block.allowedRows,
+    );
+
+    return canPlaceInRow && cellIsValid;
+  };
 
   // Check if any block has been placed in the grid
   const hasFirstBlockBeenPlaced = useMemo(() => {
@@ -345,6 +405,25 @@ const Assembly: React.FC = () => {
       }
     }
     return [];
+  };
+
+  // Clear all blocks from the grid
+  const handleClearAll = () => {
+    setGrid([
+      [[], [], []],
+      [[], [], []],
+    ]);
+  };
+
+  // Reverse entry and exit blocks (swap columns)
+  const handleReverseBlocks = () => {
+    setGrid((prev) => {
+      const newGrid: GridData = [
+        [...prev[1].map((row) => [...row])],
+        [...prev[0].map((row) => [...row])],
+      ];
+      return newGrid;
+    });
   };
 
   const handleDragStart = (id: string) => {
@@ -585,6 +664,7 @@ const Assembly: React.FC = () => {
                 id={block.type}
                 icon={block.icon}
                 abrv={block.abrv}
+                isHighlighted={isProviderBlockHighlighted(block)}
                 onDragStart={() => handleProviderDragStart(block.type)}
                 onDragEnd={(id, x, y) =>
                   handleProviderDragEnd(block.type, x, y)
@@ -628,6 +708,10 @@ const Assembly: React.FC = () => {
                     $isValidTarget={isValidTarget(colIndex, rowIndex)}
                     $isDisabled={isCellDisabled(colIndex, rowIndex)}
                     $align={getAlignment(colIndex)}
+                    onMouseEnter={() =>
+                      handleGridCellMouseEnter(colIndex, rowIndex)
+                    }
+                    onMouseLeave={handleGridCellMouseLeave}
                   >
                     {row.map((block) => (
                       <Block
@@ -646,6 +730,12 @@ const Assembly: React.FC = () => {
           })}
         </ColumnsWrapper>
       </ContentWrapper>
+
+      {/* Utility Buttons */}
+      <UtilityRow>
+        <UtilityButton onClick={handleClearAll}>🗑️ Clear All</UtilityButton>
+        <UtilityButton onClick={handleReverseBlocks}>⇄ Reverse</UtilityButton>
+      </UtilityRow>
     </Container>
   );
 };
