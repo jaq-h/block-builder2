@@ -77,7 +77,7 @@ const ProviderHeaderText = styled.span`
   color: #ccc;
 `;
 
-interface RowProps extends React.HTMLAttributes<HTMLDivElement> {
+interface RowProps {
   $isOver: boolean;
   $isValidTarget: boolean;
   $isDisabled: boolean;
@@ -97,7 +97,7 @@ const breathingAnimation = `
   }
 `;
 
-const Row = styled.div<RowProps>`
+const Row = styled.div.attrs<RowProps>(() => ({}))<RowProps>`
   ${breathingAnimation}
   flex: 1;
   border: ${({ $isOver }) => ($isOver ? "3px" : "1px")} solid
@@ -353,12 +353,6 @@ const Assembly: React.FC = () => {
     return diagonals;
   }, [getOccupiedCells]);
 
-  // Refs for each cell in the grid (not including provider)
-  const cellRefs = useRef<(HTMLDivElement | null)[][]>([
-    [null, null, null],
-    [null, null, null],
-  ]);
-
   // Check if a cell is a valid target considering placement rules
   const isCellValidForPlacement = (
     colIndex: number,
@@ -450,21 +444,22 @@ const Assembly: React.FC = () => {
     let targetCol: number | null = null;
     let targetRow: number | null = null;
 
-    cellRefs.current.forEach((column, colIndex) => {
-      column.forEach((ref, rowIndex) => {
-        if (ref) {
-          const rect = ref.getBoundingClientRect();
-          if (
-            x >= rect.left &&
-            x <= rect.right &&
-            y >= rect.top &&
-            y <= rect.bottom
-          ) {
-            targetCol = colIndex;
-            targetRow = rowIndex;
-          }
+    const elements = document.querySelectorAll("[data-col][data-row]");
+    elements.forEach((element) => {
+      const rect = element.getBoundingClientRect();
+      if (
+        x >= rect.left &&
+        x <= rect.right &&
+        y >= rect.top &&
+        y <= rect.bottom
+      ) {
+        const col = parseInt(element.getAttribute("data-col") || "-1", 10);
+        const row = parseInt(element.getAttribute("data-row") || "-1", 10);
+        if (col !== -1 && row !== -1) {
+          targetCol = col;
+          targetRow = row;
         }
-      });
+      }
     });
 
     if (targetCol !== null && targetRow !== null) {
@@ -509,21 +504,22 @@ const Assembly: React.FC = () => {
     let targetCol: number | null = null;
     let targetRow: number | null = null;
 
-    cellRefs.current.forEach((column, colIndex) => {
-      column.forEach((ref, rowIndex) => {
-        if (ref) {
-          const rect = ref.getBoundingClientRect();
-          if (
-            x >= rect.left &&
-            x <= rect.right &&
-            y >= rect.top &&
-            y <= rect.bottom
-          ) {
-            targetCol = colIndex;
-            targetRow = rowIndex;
-          }
+    const elements = document.querySelectorAll("[data-col][data-row]");
+    elements.forEach((element) => {
+      const rect = element.getBoundingClientRect();
+      if (
+        x >= rect.left &&
+        x <= rect.right &&
+        y >= rect.top &&
+        y <= rect.bottom
+      ) {
+        const col = parseInt(element.getAttribute("data-col") || "-1", 10);
+        const row = parseInt(element.getAttribute("data-row") || "-1", 10);
+        if (col !== -1 && row !== -1) {
+          targetCol = col;
+          targetRow = row;
         }
-      });
+      }
     });
     // Find source cell and block
     let sourceCol: number | null = null;
@@ -590,31 +586,20 @@ const Assembly: React.FC = () => {
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!draggingId && !draggingFromProvider) return;
 
-    let hoveredCol: number | null = null;
-    let hoveredRow: number | null = null;
+    const target = e.target as HTMLElement;
+    const rowElement = target.closest("[data-col][data-row]") as HTMLElement;
 
-    cellRefs.current.forEach((column, colIndex) => {
-      column.forEach((ref, rowIndex) => {
-        if (ref) {
-          const rect = ref.getBoundingClientRect();
-          if (
-            e.clientX >= rect.left &&
-            e.clientX <= rect.right &&
-            e.clientY >= rect.top &&
-            e.clientY <= rect.bottom
-          ) {
-            hoveredCol = colIndex;
-            hoveredRow = rowIndex;
-          }
-        }
-      });
-    });
+    if (rowElement) {
+      const col = parseInt(rowElement.getAttribute("data-col") || "-1", 10);
+      const row = parseInt(rowElement.getAttribute("data-row") || "-1", 10);
 
-    if (hoveredCol !== null && hoveredRow !== null) {
-      setHoverCell({ col: hoveredCol, row: hoveredRow });
-    } else {
-      setHoverCell(null);
+      if (col !== -1 && row !== -1) {
+        setHoverCell({ col, row });
+        return;
+      }
     }
+
+    setHoverCell(null);
   };
 
   const isDragging = draggingId !== null || draggingFromProvider !== null;
@@ -697,7 +682,8 @@ const Assembly: React.FC = () => {
                 {column.map((row, rowIndex) => (
                   <Row
                     key={rowIndex}
-                    ref={(el) => (cellRefs.current[colIndex][rowIndex] = el)}
+                    data-col={colIndex}
+                    data-row={rowIndex}
                     $isOver={
                       hoverCell?.col === colIndex &&
                       hoverCell?.row === rowIndex &&
