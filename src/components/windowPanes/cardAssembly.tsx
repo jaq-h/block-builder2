@@ -27,7 +27,6 @@ const Column = styled.div<ColProps>`
   min-width: ${({ $index }) => ($index === 0 ? "80px" : "200px")};
 `;
 
-interface RowProps {
   $isOver: boolean;
 }
 
@@ -63,6 +62,7 @@ type GridData = BlockData[][][];
 // }
 
 const Assembly: React.FC = () => {
+<<<<<<< Updated upstream
   // 2 columns x 3 rows grid
   const [grid, setGrid] = useState<GridData>([
     // Column 0
@@ -120,6 +120,7 @@ const Assembly: React.FC = () => {
       });
     });
 
+<<<<<<< Updated upstream
     if (targetCol !== null && targetRow !== null) {
       // Find source cell and block
       let sourceCol: number | null = null;
@@ -140,7 +141,6 @@ const Assembly: React.FC = () => {
       if (
         sourceCol !== null &&
         sourceRow !== null &&
-        blockData &&
         (targetCol !== sourceCol || targetRow !== sourceRow)
       ) {
         setGrid((prev) => {
@@ -150,10 +150,10 @@ const Assembly: React.FC = () => {
             sourceRow!
           ].filter((b) => b.id !== id);
           // Add to target
-          newGrid[targetCol!][targetRow!].push(blockData!);
           return newGrid;
         });
       }
+>>>>>>> Stashed changes
     }
 
     setDraggingId(null);
@@ -192,6 +192,7 @@ const Assembly: React.FC = () => {
 
   return (
     <Container onMouseMove={handleMouseMove}>
+<<<<<<< Updated upstream
       <ColumnsWrapper>
         {grid.map((column, colIndex) => (
           <Column key={colIndex} $index={colIndex}>
