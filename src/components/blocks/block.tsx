@@ -74,7 +74,6 @@ interface BlockProps {
 
 const Block: React.FC<BlockProps> = ({
   id,
-  icon,
   abrv,
   isHighlighted = false,
   onClick,

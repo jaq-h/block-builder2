@@ -77,7 +77,7 @@ const ProviderHeaderText = styled.span`
   color: #ccc;
 `;
 
-interface RowProps {
+interface RowProps extends React.HTMLAttributes<HTMLDivElement> {
   $isOver: boolean;
   $isValidTarget: boolean;
   $isDisabled: boolean;
@@ -531,21 +531,22 @@ const Assembly: React.FC = () => {
     let sourceRow: number | null = null;
     let blockData: BlockData | null = null;
 
-    grid.forEach((column, colIndex) => {
-      column.forEach((row, rowIndex) => {
-        const block = row.find((b) => b.id === id);
+    for (let colIndex = 0; colIndex < grid.length; colIndex++) {
+      for (let rowIndex = 0; rowIndex < grid[colIndex].length; rowIndex++) {
+        const block = grid[colIndex][rowIndex].find((b) => b.id === id);
         if (block) {
           sourceCol = colIndex;
           sourceRow = rowIndex;
           blockData = block;
+          break;
         }
-      });
-    });
+      }
+      if (blockData) break;
+    }
 
-    if (targetCol !== null && targetRow !== null) {
+    if (targetCol !== null && targetRow !== null && blockData !== null) {
       // Check if target cell is valid for this block
       if (
-        blockData &&
         !isCellValidForPlacement(targetCol, targetRow, blockData.allowedRows)
       ) {
         setDraggingId(null);
@@ -557,9 +558,9 @@ const Assembly: React.FC = () => {
       if (
         sourceCol !== null &&
         sourceRow !== null &&
-        blockData &&
         (targetCol !== sourceCol || targetRow !== sourceRow)
       ) {
+        const movedBlock = blockData;
         setGrid((prev) => {
           const newGrid = prev.map((col) => col.map((row) => [...row]));
           // Remove from source
@@ -567,10 +568,12 @@ const Assembly: React.FC = () => {
             sourceRow!
           ].filter((b) => b.id !== id);
           // Add to target
-          newGrid[targetCol!][targetRow!].push(blockData!);
+          newGrid[targetCol!][targetRow!].push(movedBlock);
           return newGrid;
         });
       }
+    } else if (blockData === null) {
+      // Block not found, do nothing
     } else {
       // Dropped outside - remove the block
       if (sourceCol !== null && sourceRow !== null) {
@@ -666,7 +669,7 @@ const Assembly: React.FC = () => {
                 abrv={block.abrv}
                 isHighlighted={isProviderBlockHighlighted(block)}
                 onDragStart={() => handleProviderDragStart(block.type)}
-                onDragEnd={(id, x, y) =>
+                onDragEnd={(_id, x, y) =>
                   handleProviderDragEnd(block.type, x, y)
                 }
                 onMouseEnter={() => handleProviderMouseEnter(block.type)}
