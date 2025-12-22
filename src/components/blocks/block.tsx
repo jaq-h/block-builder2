@@ -7,13 +7,9 @@ interface ButtonProps {
 }
 
 const Button = styled.button<ButtonProps>`
-  width: 34px;
-  height: 34px;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0;
-  border: none;
   border-radius: 4px;
   background-color: ${({ $isPlaceholder }) =>
     $isPlaceholder ? "rgba(146, 59, 163, 0.4)" : "#923ba3"};
@@ -43,7 +39,6 @@ const BlockWrapper = styled.div`
 
 interface BlockProps {
   id: string;
-  icon: string;
   onClick?: () => void;
   onDragStart?: (id: string) => void;
   onDragEnd?: (id: string, x: number, y: number) => void;
@@ -103,14 +98,11 @@ const Block: React.FC<BlockProps> = ({
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <BlockWrapper>
       {/* Static placeholder that stays in place while dragging */}
       {isDragging && (
         <Button $isDragging={false} $isPlaceholder={true}>
-          <img src={icon} alt="" width={20} height={20} draggable={false} />
         </Button>
       )}
-      {/* The actual draggable block */}
       <Button
         $isDragging={isDragging}
         onMouseDown={handleMouseDown}
@@ -124,7 +116,6 @@ const Block: React.FC<BlockProps> = ({
             : {}
         }
       >
-        <img src={icon} alt="" width={20} height={20} draggable={false} />
       </Button>
     </BlockWrapper>
   );
