@@ -1,35 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import styled from "styled-components";
 
-const breathingAnimation = `
-  @keyframes blockBreathing {
-    0%, 100% {
-      border-color: rgba(255, 255, 255, 0.5);
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-    }
-    50% {
-      border-color: rgba(255, 255, 255, 1);
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
-    }
-  }
-`;
-
 interface ButtonProps {
   $isDragging: boolean;
   $isPlaceholder?: boolean;
-  $isHighlighted?: boolean;
 }
 
 const Button = styled.button<ButtonProps>`
-  ${breathingAnimation}
-  width: 40px;
-  height: 40px;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 3px;
-  border: ${({ $isHighlighted }) =>
-    $isHighlighted ? "2px solid #fff" : "none"};
   border-radius: 4px;
   background-color: ${({ $isPlaceholder }) =>
     $isPlaceholder ? "rgba(146, 59, 163, 0.4)" : "#923ba3"};
@@ -41,9 +21,6 @@ const Button = styled.button<ButtonProps>`
   pointer-events: ${({ $isDragging, $isPlaceholder }) =>
     $isDragging || $isPlaceholder ? "none" : "auto"};
   opacity: ${({ $isPlaceholder }) => ($isPlaceholder ? 0.5 : 1)};
-  color: #fff;
-  animation: ${({ $isHighlighted }) =>
-    $isHighlighted ? "blockBreathing 1.5s ease-in-out infinite" : "none"};
 
   &:hover {
     background-color: ${({ $isPlaceholder }) =>
@@ -62,14 +39,9 @@ const BlockWrapper = styled.div`
 
 interface BlockProps {
   id: string;
-  icon?: string;
-  abrv: string;
-  isHighlighted?: boolean;
   onClick?: () => void;
   onDragStart?: (id: string) => void;
   onDragEnd?: (id: string, x: number, y: number) => void;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
 }
 
 const Block: React.FC<BlockProps> = ({
@@ -79,8 +51,6 @@ const Block: React.FC<BlockProps> = ({
   onClick,
   onDragStart,
   onDragEnd,
-  onMouseEnter,
-  onMouseLeave,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -128,17 +98,13 @@ const Block: React.FC<BlockProps> = ({
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <BlockWrapper onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
       {/* Static placeholder that stays in place while dragging */}
       {isDragging && (
         <Button $isDragging={false} $isPlaceholder={true}>
-          <span>{`${abrv}`}</span>
         </Button>
       )}
-      {/* The actual draggable block (or clone for provider) */}
       <Button
         $isDragging={isDragging}
-        $isHighlighted={isHighlighted && !isDragging}
         onMouseDown={handleMouseDown}
         onClick={!isDragging ? onClick : undefined}
         style={
@@ -150,7 +116,6 @@ const Block: React.FC<BlockProps> = ({
             : {}
         }
       >
-        <span>{`${abrv}`}</span>
       </Button>
     </BlockWrapper>
   );

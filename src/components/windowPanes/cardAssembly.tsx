@@ -215,6 +215,8 @@ const FIRST_PLACEMENT_ROW = 1;
 const COLUMN_HEADERS = ["Entry", "Exit"];
 
 const Assembly: React.FC = () => {
+  // 2 columns x 3 rows grid
+
   // Static provider blocks (column 0)
   const providerBlocks: ProviderBlockData[] = [
     { type: "limit", abrv: "Lmt", allowedRows: [0, 1] },
@@ -525,11 +527,11 @@ const Assembly: React.FC = () => {
         }
       });
     });
-
-    // Find source cell and block
-    let sourceCol: number | null = null;
-    let sourceRow: number | null = null;
-    let blockData: BlockData | null = null;
+    if (targetCol !== null && targetRow !== null) {
+      // Find source cell and block
+      let sourceCol: number | null = null;
+      let sourceRow: number | null = null;
+      let blockData: BlockData | null = null;
 
     for (let colIndex = 0; colIndex < grid.length; colIndex++) {
       for (let rowIndex = 0; rowIndex < grid[colIndex].length; rowIndex++) {
@@ -574,6 +576,10 @@ const Assembly: React.FC = () => {
       }
     } else if (blockData === null) {
       // Block not found, do nothing
+          return newGrid;
+        });
+      }
+
     } else {
       // Dropped outside - remove the block
       if (sourceCol !== null && sourceRow !== null) {
@@ -586,7 +592,6 @@ const Assembly: React.FC = () => {
         });
       }
     }
-
     setDraggingId(null);
     setHoverCell(null);
   };
@@ -650,7 +655,7 @@ const Assembly: React.FC = () => {
   };
 
   return (
-    <Container onMouseMove={handleMouseMove}>
+    <Container onMouseMove={handleMouseMove}>        
       <Header>
         <HeaderText>Card Assembly</HeaderText>
       </Header>
