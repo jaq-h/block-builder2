@@ -6,7 +6,10 @@ export interface BlockData {
   id: string;
   orderType: string; // Order type identifier (e.g., "limit", "stop-loss-limit")
   label: string; // Display label (e.g., "Limit", "Stop Loss Limit")
-  icon?: string;
+  icon?: string; // Legacy - use providerIcon instead
+  providerIcon?: string; // Icon for the provider column (full order type icon)
+  triggerIcon?: string; // Icon for the trigger axis slider
+  limitIcon?: string; // Icon for the limit axis slider
   abrv: string;
   allowedRows: number[];
   axis: 1 | 2;

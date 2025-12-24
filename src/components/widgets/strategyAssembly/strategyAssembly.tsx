@@ -34,8 +34,12 @@ import {
   ColumnHeaderText,
   UtilityRow,
   UtilityButton,
+  UtilityIcon,
   DebugPanel,
 } from "./strategyAssembly.styles";
+import TrashIcon from "../../../assets/icons/trash.svg";
+import ReverseIcon from "../../../assets/icons/reverse.svg";
+import { SCALE_CONFIG } from "./GridCell.styles";
 import { useKrakenAPI } from "../../../hooks/useKrakenAPI";
 
 // Props for the main component
@@ -249,17 +253,20 @@ const StrategyAssemblyInner: React.FC = () => {
     const isDescending = shouldBeDescending(row, col);
 
     // Convert to percentage based on scale direction
+    // Use SCALE_CONFIG.MAX_PERCENT as the maximum value (single source of truth)
+    const { MAX_PERCENT } = SCALE_CONFIG;
     let percentage: number;
     if (isDescending) {
-      // Descending: 0% at top, 100% at bottom
-      percentage = (clampedRelativeY / availableHeight) * 100;
+      // Descending: 0% at top, MAX_PERCENT at bottom
+      percentage = (clampedRelativeY / availableHeight) * MAX_PERCENT;
     } else {
-      // Ascending: 100% at top, 0% at bottom
-      percentage = 100 - (clampedRelativeY / availableHeight) * 100;
+      // Ascending: MAX_PERCENT at top, 0% at bottom
+      percentage =
+        MAX_PERCENT - (clampedRelativeY / availableHeight) * MAX_PERCENT;
     }
 
-    // Round to 1 decimal place
-    const roundedPercentage = Math.round(percentage * 10) / 10;
+    // Round to 2 decimal places for precision display
+    const roundedPercentage = Math.round(percentage * 100) / 100;
 
     // Update only this block's position in the grid
     setGrid((prev) => {
@@ -518,8 +525,14 @@ const StrategyAssemblyInner: React.FC = () => {
 
       {/* Utility Buttons */}
       <UtilityRow>
-        <UtilityButton onClick={clearAll}>🗑️ Clear All</UtilityButton>
-        <UtilityButton onClick={reverseBlocks}>⇄ Reverse</UtilityButton>
+        <UtilityButton onClick={clearAll}>
+          <UtilityIcon src={TrashIcon} alt="Clear" />
+          Clear All
+        </UtilityButton>
+        <UtilityButton onClick={reverseBlocks}>
+          <UtilityIcon src={ReverseIcon} alt="Reverse" />
+          Reverse
+        </UtilityButton>
       </UtilityRow>
 
       {/* Debug: Order Configuration Display */}

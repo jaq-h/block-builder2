@@ -26,6 +26,7 @@ import {
   WarningIcon,
   WarningText,
   WarningSubtext,
+  getScaleLabels,
 } from "./GridCell.styles";
 
 // Helper to calculate price from percentage offset
@@ -94,6 +95,7 @@ const GridCell: React.FC<GridCellProps> = ({
   const displayMode = getCellDisplayMode(blocks);
   const isDescending = shouldBeDescending(rowIndex, colIndex);
   const orderTypeLabel = blocks.length > 0 ? blocks[0].label : null;
+  const isBuy = colIndex === 0; // colIndex 0 = Buy (Entry), colIndex 1 = Sell (Exit)
 
   // Check if cell should show axis 1 (trigger)
   const hasAxis1Blocks = blocks.some((block) => block.axis === 1);
@@ -106,17 +108,32 @@ const GridCell: React.FC<GridCellProps> = ({
     rowLabel.toLowerCase() === "primary" ? "primary" : "conditional";
 
   const renderPercentageScale = (isDesc: boolean) => {
-    // For ascending: 100% at top, 0% at bottom (near market axis)
-    // For descending: 0% at top (near market axis), 100% at bottom
-    const values = isDesc
-      ? ["0.00%", "25.00%", "50.00%", "75.00%", "100.00%"]
-      : ["100.00%", "75.00%", "50.00%", "25.00%", "0.00%"];
+    // Use single source of truth for scale labels (whole numbers)
+    const labels = getScaleLabels(isDesc);
     return (
       <PercentageScale $isDescending={isDesc}>
-        {values.map((val) => (
-          <span key={val}>{val}</span>
+        {labels.map((label) => (
+          <span key={label}>{label}</span>
         ))}
       </PercentageScale>
+    );
+  };
+
+  // Render market price line and label - now at cell level for centering
+  const renderMarketPrice = () => {
+    return (
+      <MarketPriceLine $isDescending={isDescending}>
+        <MarketPriceLabel $isDescending={isDescending}>
+          {priceError
+            ? "Price Error"
+            : currentPrice
+              ? `$${currentPrice.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+              : "Loading price..."}
+        </MarketPriceLabel>
+      </MarketPriceLine>
     );
   };
 
@@ -124,31 +141,23 @@ const GridCell: React.FC<GridCellProps> = ({
     axisBlocks: BlockData[],
     isSingleAxis: boolean,
     axisLabel: string,
-    showMarketPrice: boolean = true,
+    showPercentageScale: boolean = true,
   ) => {
     // Determine sign based on ascending/descending
     const sign = isDescending ? "-" : "+";
 
     return (
       <AxisColumn $isSingleAxis={isSingleAxis}>
-        {renderPercentageScale(isDescending)}
-        <SliderTrack $isDescending={isDescending} />
-        <MarketPriceLine $isDescending={isDescending}>
-          {showMarketPrice && (
-            <MarketPriceLabel $isDescending={isDescending}>
-              {priceError
-                ? "Price Error"
-                : currentPrice
-                  ? `$${currentPrice.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`
-                  : "Loading price..."}
-            </MarketPriceLabel>
-          )}
-        </MarketPriceLine>
+        {showPercentageScale && renderPercentageScale(isDescending)}
+        <SliderTrack
+          $isDescending={isDescending}
+          $isSingleAxis={isSingleAxis}
+        />
         {/* Show axis label above or below market line */}
-        <AxisLabelItem $position={isDescending ? "below" : "above"}>
+        <AxisLabelItem
+          $position={isDescending ? "below" : "above"}
+          $isSingleAxis={isSingleAxis}
+        >
           {axisLabel}
         </AxisLabelItem>
 
@@ -158,32 +167,40 @@ const GridCell: React.FC<GridCellProps> = ({
             block.yPosition,
             isDescending,
           );
+          // Determine which icon to show based on axis (trigger or limit icon for slider)
+          const sliderIcon =
+            block.axis === 1 ? block.triggerIcon : block.limitIcon;
           return (
             <React.Fragment key={block.id}>
               <DashedIndicator
                 $yPosition={block.yPosition}
                 $isDescending={isDescending}
+                $isSingleAxis={isSingleAxis}
               />
               <PercentageLabel
                 $yPosition={block.yPosition}
                 $isDescending={isDescending}
                 $sign={sign}
+                $isSingleAxis={isSingleAxis}
               >
                 {block.yPosition.toFixed(2)}%
               </PercentageLabel>
               <CalculatedPriceLabel
                 $yPosition={block.yPosition}
                 $isDescending={isDescending}
+                $isSingleAxis={isSingleAxis}
+                $isBuy={isBuy}
               >
                 {formatCalculatedPrice(calculatedPrice)}
               </CalculatedPriceLabel>
               <BlockPositioner
                 $yPosition={block.yPosition}
                 $isDescending={isDescending}
+                $isSingleAxis={isSingleAxis}
               >
                 <Block
                   id={block.id}
-                  icon={block.icon}
+                  icon={sliderIcon || block.icon}
                   abrv={block.abrv}
                   axis={block.axis}
                   axes={block.axes}
@@ -258,6 +275,8 @@ const GridCell: React.FC<GridCellProps> = ({
             )}
           </CellHeader>
           <SliderArea>
+            {/* Market price centered at cell level */}
+            {renderMarketPrice()}
             {renderAxisContent(blocks, true, "Limit", true)}
           </SliderArea>
         </>
@@ -274,6 +293,8 @@ const GridCell: React.FC<GridCellProps> = ({
           {orderTypeLabel && <OrderTypeLabel>{orderTypeLabel}</OrderTypeLabel>}
         </CellHeader>
         <SliderArea>
+          {/* Market price centered at cell level - rendered once for all axes */}
+          {renderMarketPrice()}
           {hasAxis1Blocks &&
             renderAxisContent(axis1Blocks, !hasAxis2Blocks, "Trigger", true)}
           {hasAxis2Blocks &&
@@ -281,7 +302,7 @@ const GridCell: React.FC<GridCellProps> = ({
               axis2Blocks,
               !hasAxis1Blocks,
               "Limit",
-              !hasAxis1Blocks,
+              !hasAxis1Blocks, // Only show percentage scale if axis 1 isn't present
             )}
         </SliderArea>
       </>

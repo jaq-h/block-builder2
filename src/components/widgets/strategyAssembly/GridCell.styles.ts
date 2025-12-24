@@ -2,7 +2,33 @@
 import styled from "styled-components";
 
 // =============================================================================
-// CONSTANTS
+// SCALE CONFIGURATION - Single Source of Truth
+// =============================================================================
+
+export const SCALE_CONFIG = {
+  MIN_PERCENT: 0, // Minimum percentage value
+  MAX_PERCENT: 50, // Maximum percentage value
+  STEP_COUNT: 5, // Number of labels on the scale (0%, 12.5%, 25%, 37.5%, 50%)
+} as const;
+
+// Generate scale labels as whole numbers for display
+export const getScaleLabels = (isDescending: boolean): string[] => {
+  const { MIN_PERCENT, MAX_PERCENT, STEP_COUNT } = SCALE_CONFIG;
+  const step = (MAX_PERCENT - MIN_PERCENT) / (STEP_COUNT - 1);
+  const labels: string[] = [];
+
+  for (let i = 0; i < STEP_COUNT; i++) {
+    const value = MIN_PERCENT + step * i;
+    labels.push(`${Math.round(value)}%`);
+  }
+
+  // Descending: 0% at top (near market), increasing downward
+  // Ascending: 0% at bottom (near market), increasing upward
+  return isDescending ? labels : labels.reverse();
+};
+
+// =============================================================================
+// LAYOUT CONSTANTS
 // =============================================================================
 
 export const MARKET_PADDING = 20; // Space for market axis and price label
@@ -22,8 +48,18 @@ export const getTrackStart = (isDescending: boolean) =>
 export const getTrackEnd = (isDescending: boolean) =>
   isDescending ? 0 : MARKET_PADDING + MARKET_GAP;
 
-export const getPositionPercent = (yPosition: number, isDescending: boolean) =>
-  isDescending ? yPosition / 100 : (100 - yPosition) / 100;
+// Convert yPosition (0 to MAX_PERCENT) to track percentage (0 to 1)
+export const getPositionPercent = (
+  yPosition: number,
+  isDescending: boolean,
+) => {
+  const { MAX_PERCENT } = SCALE_CONFIG;
+  // Clamp yPosition to valid range
+  const clampedPosition = Math.max(0, Math.min(MAX_PERCENT, yPosition));
+  // Convert to 0-1 range based on max percent
+  const normalizedPosition = clampedPosition / MAX_PERCENT;
+  return isDescending ? normalizedPosition : 1 - normalizedPosition;
+};
 
 // =============================================================================
 // ANIMATIONS
@@ -125,16 +161,16 @@ export const RowLabelBadge = styled.div<{ $type: "primary" | "conditional" }>`
   letter-spacing: 0.5px;
   background-color: ${({ $type }) =>
     $type === "primary"
-      ? "rgba(100, 200, 100, 0.25)"
+      ? "rgba(30, 60, 120, 0.4)"
       : "rgba(200, 150, 50, 0.25)"};
   color: ${({ $type }) =>
     $type === "primary"
-      ? "rgba(150, 255, 150, 0.9)"
+      ? "rgba(130, 170, 255, 0.9)"
       : "rgba(255, 200, 100, 0.9)"};
   border: 1px solid
     ${({ $type }) =>
       $type === "primary"
-        ? "rgba(100, 200, 100, 0.5)"
+        ? "rgba(60, 100, 180, 0.6)"
         : "rgba(200, 150, 50, 0.5)"};
 `;
 
@@ -160,10 +196,13 @@ export const OrderTypeLabel = styled.div`
 // AXIS COMPONENTS
 // =============================================================================
 
-export const AxisLabelItem = styled.span<{ $position?: "above" | "below" }>`
+export const AxisLabelItem = styled.span<{
+  $position?: "above" | "below";
+  $isSingleAxis?: boolean;
+}>`
   position: absolute;
   ${({ $position }) => ($position === "above" ? "top: 2px" : "bottom: 2px")};
-  left: 50%;
+  left: ${({ $isSingleAxis }) => ($isSingleAxis !== false ? "50%" : "35%")};
   transform: translateX(-50%);
   font-size: 9px;
   color: rgba(255, 255, 255, 0.5);
@@ -176,6 +215,7 @@ export const SliderArea = styled.div`
   position: relative;
   display: flex;
   flex-direction: row;
+  overflow: visible;
 `;
 
 export const AxisColumn = styled.div<{ $isSingleAxis?: boolean }>`
@@ -184,6 +224,7 @@ export const AxisColumn = styled.div<{ $isSingleAxis?: boolean }>`
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: visible;
 `;
 
 // =============================================================================
@@ -192,7 +233,7 @@ export const AxisColumn = styled.div<{ $isSingleAxis?: boolean }>`
 
 export const PercentageScale = styled.div<{ $isDescending?: boolean }>`
   position: absolute;
-  left: 4px;
+  left: 0;
   top: ${({ $isDescending }) =>
     getTrackStart($isDescending ?? false) + BLOCK_HEIGHT / 2}px;
   bottom: ${({ $isDescending }) =>
@@ -205,9 +246,12 @@ export const PercentageScale = styled.div<{ $isDescending?: boolean }>`
   pointer-events: none;
 `;
 
-export const SliderTrack = styled.div<{ $isDescending?: boolean }>`
+export const SliderTrack = styled.div<{
+  $isDescending?: boolean;
+  $isSingleAxis?: boolean;
+}>`
   position: absolute;
-  left: 50%;
+  left: ${({ $isSingleAxis }) => ($isSingleAxis !== false ? "50%" : "35%")};
   top: ${({ $isDescending }) =>
     getTrackStart($isDescending ?? false) + BLOCK_HEIGHT / 2}px;
   bottom: ${({ $isDescending }) =>
@@ -223,7 +267,7 @@ export const SliderTrack = styled.div<{ $isDescending?: boolean }>`
 `;
 
 // =============================================================================
-// MARKET PRICE LINE & LABEL
+// MARKET PRICE LINE & LABEL (Cell-level, centered across all axes)
 // =============================================================================
 
 export const MarketPriceLine = styled.div<{ $isDescending?: boolean }>`
@@ -237,11 +281,14 @@ export const MarketPriceLine = styled.div<{ $isDescending?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 0;
+  z-index: 5;
+  pointer-events: none;
 `;
 
 export const MarketPriceLabel = styled.div<{ $isDescending?: boolean }>`
   position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   ${({ $isDescending }) => ($isDescending ? "bottom: 6px" : "top: 6px")};
   font-size: 9px;
   font-weight: 500;
@@ -250,6 +297,7 @@ export const MarketPriceLabel = styled.div<{ $isDescending?: boolean }>`
   background-color: var(--ds-bg-color);
   padding: 2px 6px;
   border-radius: 3px;
+  z-index: 6;
 `;
 
 // =============================================================================
@@ -259,10 +307,11 @@ export const MarketPriceLabel = styled.div<{ $isDescending?: boolean }>`
 export const BlockPositioner = styled.div<{
   $yPosition: number;
   $isDescending?: boolean;
+  $isSingleAxis?: boolean;
 }>`
   position: absolute;
-  left: 0;
-  right: 0;
+  left: ${({ $isSingleAxis }) => ($isSingleAxis !== false ? "0" : "-15%")};
+  right: ${({ $isSingleAxis }) => ($isSingleAxis !== false ? "0" : "15%")};
   top: ${({ $yPosition, $isDescending }) => {
     const isDesc = $isDescending ?? false;
     const percent = getPositionPercent($yPosition, isDesc);
@@ -286,9 +335,10 @@ export const BlockPositioner = styled.div<{
 export const DashedIndicator = styled.div<{
   $yPosition: number;
   $isDescending?: boolean;
+  $isSingleAxis?: boolean;
 }>`
   position: absolute;
-  left: 50%;
+  left: ${({ $isSingleAxis }) => ($isSingleAxis !== false ? "50%" : "35%")};
   transform: translateX(-50%);
   width: 1px;
   border-left: 2px dashed var(--border-color-options-row-underscored);
@@ -305,21 +355,25 @@ export const DashedIndicator = styled.div<{
 `;
 
 // =============================================================================
-// PERCENTAGE LABEL
+// PERCENTAGE LABEL (Absolute positioned, immediately right of block)
 // =============================================================================
 
 export const PercentageLabel = styled.div<{
   $yPosition: number;
   $isDescending?: boolean;
   $sign?: string;
+  $isSingleAxis?: boolean;
 }>`
   position: absolute;
-  right: 4px;
   font-size: 10px;
   font-weight: 500;
   color: var(--accent-color-purple);
   pointer-events: none;
-  z-index: 3;
+  z-index: 9999;
+  white-space: nowrap;
+  /* Position to the right of the block - 50% for single axis, 35% for dual axis */
+  left: ${({ $isSingleAxis }) =>
+    $isSingleAxis !== false ? "calc(50% + 25px)" : "calc(35% + 25px)"};
   top: ${({ $yPosition, $isDescending }) => {
     const isDesc = $isDescending ?? false;
     const percent = getPositionPercent($yPosition, isDesc);
@@ -333,18 +387,30 @@ export const PercentageLabel = styled.div<{
   }
 `;
 
+// =============================================================================
+// CALCULATED PRICE LABEL (Absolute positioned, immediately right of block)
+// =============================================================================
+
 export const CalculatedPriceLabel = styled.div<{
   $yPosition: number;
   $isDescending?: boolean;
+  $isSingleAxis?: boolean;
+  $isBuy?: boolean;
 }>`
   position: absolute;
-  right: 4px;
   font-size: 9px;
-  font-weight: 400;
+  font-weight: 500;
   color: var(--text-color-primary);
-  opacity: 0.7;
   pointer-events: none;
-  z-index: 3;
+  z-index: 9999;
+  white-space: nowrap;
+  background-color: ${({ $isBuy }) =>
+    $isBuy ? "rgba(76, 175, 80, 0.85)" : "rgba(244, 67, 54, 0.85)"};
+  padding: 2px 6px;
+  border-radius: 3px;
+  /* Position to the right of the block - 50% for single axis, 35% for dual axis */
+  left: ${({ $isSingleAxis }) =>
+    $isSingleAxis !== false ? "calc(50% + 25px)" : "calc(35% + 25px)"};
   top: ${({ $yPosition, $isDescending }) => {
     const isDesc = $isDescending ?? false;
     const percent = getPositionPercent($yPosition, isDesc);

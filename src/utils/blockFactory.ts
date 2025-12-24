@@ -1,7 +1,7 @@
 // Block factory utilities for creating BlockData from OrderTypeDefinition
 import type { BlockData } from "./cardAssemblyUtils";
 import type { OrderTypeDefinition } from "../data/orderTypes";
-import { getDefaultPosition } from "../data/orderTypes";
+import { getDefaultPosition, ORDER_TYPES } from "../data/orderTypes";
 
 export interface BlockCreationContext {
   baseId: string;
@@ -12,6 +12,63 @@ export interface CreatedBlocks {
   blocks: BlockData[];
   nextCounter: number;
 }
+
+// Icon paths
+const LIMIT_ICON = "/src/assets/icons/limit.svg";
+
+/**
+ * Get the base (non-limit) version icon for a limit order type
+ * e.g., "stop-loss-limit" -> stop-loss icon
+ *       "take-profit-limit" -> take-profit icon
+ *       "trailing-stop-limit" -> trailing-stop icon
+ */
+const getBaseOrderIcon = (orderType: string): string | undefined => {
+  // If it's a limit variant, find the base order type
+  if (orderType.endsWith("-limit")) {
+    const baseType = orderType.replace("-limit", "");
+    const baseOrderDef = ORDER_TYPES.find((ot) => ot.type === baseType);
+    return baseOrderDef?.icon;
+  }
+  return undefined;
+};
+
+/**
+ * Determine the icons for a block based on its order type and axes
+ * - providerIcon: The full order type icon (shown in provider column)
+ * - triggerIcon: Icon for trigger axis (base order type icon for limit variants)
+ * - limitIcon: Icon for limit axis (always the limit icon)
+ */
+const getBlockIcons = (
+  orderType: OrderTypeDefinition,
+): {
+  providerIcon?: string;
+  triggerIcon?: string;
+  limitIcon?: string;
+} => {
+  const { type, icon, axes } = orderType;
+
+  const result: {
+    providerIcon?: string;
+    triggerIcon?: string;
+    limitIcon?: string;
+  } = {
+    providerIcon: icon,
+  };
+
+  // Determine trigger icon
+  if (axes.includes("trigger")) {
+    // For limit variants (e.g., stop-loss-limit), use the base order icon
+    const baseIcon = getBaseOrderIcon(type);
+    result.triggerIcon = baseIcon || icon;
+  }
+
+  // Determine limit icon
+  if (axes.includes("limit")) {
+    result.limitIcon = LIMIT_ICON;
+  }
+
+  return result;
+};
 
 /**
  * Creates BlockData instances from an OrderTypeDefinition
@@ -26,6 +83,9 @@ export const createBlocksFromOrderType = (
   let currentCounter = counter;
   const { type, label, icon, abrv, allowedRows, axes } = orderType;
 
+  // Get icons for this order type
+  const { providerIcon, triggerIcon, limitIcon } = getBlockIcons(orderType);
+
   // Case 1: No axes (Market order) - no price data
   if (axes.length === 0) {
     currentCounter += 1;
@@ -34,6 +94,9 @@ export const createBlocksFromOrderType = (
       orderType: type,
       label,
       icon,
+      providerIcon,
+      triggerIcon,
+      limitIcon,
       abrv,
       allowedRows,
       axis: 1,
@@ -49,6 +112,9 @@ export const createBlocksFromOrderType = (
       orderType: type,
       label,
       icon,
+      providerIcon,
+      triggerIcon,
+      limitIcon,
       abrv,
       allowedRows,
       axis: 2,
@@ -64,6 +130,9 @@ export const createBlocksFromOrderType = (
       orderType: type,
       label,
       icon,
+      providerIcon,
+      triggerIcon,
+      limitIcon,
       abrv,
       allowedRows,
       axis: 1,
@@ -79,6 +148,9 @@ export const createBlocksFromOrderType = (
       orderType: type,
       label,
       icon,
+      providerIcon,
+      triggerIcon,
+      limitIcon,
       abrv,
       allowedRows,
       axis: 1,
@@ -92,6 +164,9 @@ export const createBlocksFromOrderType = (
       orderType: type,
       label,
       icon,
+      providerIcon,
+      triggerIcon,
+      limitIcon,
       abrv: `${abrv}-L`,
       allowedRows,
       axis: 2,

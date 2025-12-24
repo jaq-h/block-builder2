@@ -27,7 +27,7 @@ export const ORDER_TYPES: OrderTypeDefinition[] = [
     allowedRows: [0, 1],
     axes: ["limit"],
     defaults: {
-      limit: 50,
+      limit: 25,
     },
   },
   {
@@ -47,7 +47,7 @@ export const ORDER_TYPES: OrderTypeDefinition[] = [
     allowedRows: [1],
     axes: ["limit"],
     defaults: {
-      limit: 50,
+      limit: 25,
     },
   },
   {
@@ -58,7 +58,7 @@ export const ORDER_TYPES: OrderTypeDefinition[] = [
     allowedRows: [1, 2],
     axes: ["trigger"],
     defaults: {
-      trigger: 25, // Default to 25% below (drawdown territory)
+      trigger: 15, // Default to 15% below (drawdown territory)
     },
   },
   {
@@ -69,8 +69,8 @@ export const ORDER_TYPES: OrderTypeDefinition[] = [
     allowedRows: [1, 2],
     axes: ["trigger", "limit"],
     defaults: {
-      trigger: 25,
-      limit: 20, // Limit slightly below trigger
+      trigger: 15,
+      limit: 10, // Limit slightly below trigger
     },
   },
   {
@@ -81,7 +81,7 @@ export const ORDER_TYPES: OrderTypeDefinition[] = [
     allowedRows: [0, 1],
     axes: ["trigger"],
     defaults: {
-      trigger: 75, // Default to 75% (upside territory)
+      trigger: 25, // Default to 25% (upside territory)
     },
   },
   {
@@ -92,8 +92,8 @@ export const ORDER_TYPES: OrderTypeDefinition[] = [
     allowedRows: [0, 1],
     axes: ["trigger", "limit"],
     defaults: {
-      trigger: 75,
-      limit: 70, // Limit slightly below trigger
+      trigger: 25,
+      limit: 20, // Limit slightly below trigger
     },
   },
   {
@@ -104,7 +104,7 @@ export const ORDER_TYPES: OrderTypeDefinition[] = [
     allowedRows: [1, 2],
     axes: ["trigger"],
     defaults: {
-      trigger: 30, // Default trailing distance
+      trigger: 20, // Default trailing distance
     },
   },
   {
@@ -115,8 +115,8 @@ export const ORDER_TYPES: OrderTypeDefinition[] = [
     allowedRows: [1, 2],
     axes: ["trigger", "limit"],
     defaults: {
-      trigger: 30,
-      limit: 25,
+      trigger: 20,
+      limit: 15,
     },
   },
 ];

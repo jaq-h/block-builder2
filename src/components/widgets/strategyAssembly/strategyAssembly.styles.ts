@@ -6,7 +6,7 @@ import styled from "styled-components";
 // =============================================================================
 
 export const Container = styled.div`
-  max-width: 520px;
+  max-width: 620px;
   height: 100%;
   margin: auto;
   display: flex;
@@ -106,7 +106,7 @@ export const PatternDescription = styled.span`
 export const Column = styled.div`
   display: flex;
   flex-direction: column;
-  min-width: 180px;
+  min-width: 220px;
   width: 100%;
   background-color: rgb(22, 18, 31);
   border: 1px solid rgba(229, 231, 235, 0.2);
@@ -163,6 +163,13 @@ export const UtilityButton = styled.button`
     border-color: var(--accent-color-purple);
     color: var(--text-color-icon-logo);
   }
+`;
+
+export const UtilityIcon = styled.img`
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
 `;
 
 // =============================================================================
