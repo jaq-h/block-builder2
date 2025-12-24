@@ -1,38 +1,37 @@
+import type { AxisType, OrderTypeDefinition } from "../data/orderTypes";
+import { GRID_CONFIG } from "../data/orderTypes";
+
 // Types
 export interface BlockData {
   id: string;
   icon?: string;
   abrv: string;
   allowedRows: number[];
+  axis: 1 | 2;
+  yPosition: number; // -1 for no position
+  axes: AxisType[];
+  linkedBlockId?: string;
 }
 
-export interface ProviderBlockData {
-  type: string;
-  abrv: string;
-  icon?: string;
-  allowedRows: number[];
-}
-
+export type ProviderBlockData = OrderTypeDefinition;
 export type GridData = BlockData[][][];
-
 export interface CellPosition {
   col: number;
   row: number;
 }
 
-// Constants
-export const FIRST_PLACEMENT_ROW = 1;
+// Use centralized config
+export const FIRST_PLACEMENT_ROW = GRID_CONFIG.firstPlacementRow;
 
-/**
- * Check if any block has been placed in the grid
- */
-export const hasAnyBlockBeenPlaced = (grid: GridData): boolean => {
-  return grid.some((column) => column.some((row) => row.length > 0));
-};
+/** Create an empty grid */
+export const createEmptyGrid = (): GridData =>
+  clearGrid(GRID_CONFIG.numColumns, GRID_CONFIG.numRows);
 
-/**
- * Get all cells that have blocks
- */
+/** Check if any block has been placed in the grid */
+export const hasAnyBlockBeenPlaced = (grid: GridData): boolean =>
+  grid.some((column) => column.some((row) => row.length > 0));
+
+/** Get all cells that have blocks */
 export const getOccupiedCells = (grid: GridData): CellPosition[] => {
   const occupied: CellPosition[] = [];
   grid.forEach((column, colIndex) => {
@@ -45,176 +44,187 @@ export const getOccupiedCells = (grid: GridData): CellPosition[] => {
   return occupied;
 };
 
-/**
- * Get diagonal cells from all occupied cells
- */
+/** Get diagonal cells from all occupied cells */
 export const getDiagonalCells = (
   occupiedCells: CellPosition[],
   numColumns: number,
-  numRows: number
+  numRows: number,
 ): Set<string> => {
   const diagonals = new Set<string>();
+  const offsets = [
+    { col: -1, row: -1 },
+    { col: -1, row: 1 },
+    { col: 1, row: -1 },
+    { col: 1, row: 1 },
+  ];
 
   occupiedCells.forEach(({ col, row }) => {
-    // Four diagonal directions
-    const diagonalOffsets = [
-      { col: -1, row: -1 }, // top-left
-      { col: -1, row: 1 }, // bottom-left
-      { col: 1, row: -1 }, // top-right
-      { col: 1, row: 1 }, // bottom-right
-    ];
-
-    diagonalOffsets.forEach((offset) => {
+    offsets.forEach((offset) => {
       const newCol = col + offset.col;
       const newRow = row + offset.row;
-
-      // Check bounds
-      if (newCol >= 0 && newCol < numColumns && newRow >= 0 && newRow < numRows) {
+      if (
+        newCol >= 0 &&
+        newCol < numColumns &&
+        newRow >= 0 &&
+        newRow < numRows
+      ) {
         diagonals.add(`${newCol}-${newRow}`);
       }
     });
   });
 
-  // Remove cells that are already occupied
-  occupiedCells.forEach(({ col, row }) => {
-    diagonals.delete(`${col}-${row}`);
-  });
-
+  occupiedCells.forEach(({ col, row }) => diagonals.delete(`${col}-${row}`));
   return diagonals;
 };
 
-/**
- * Check if a cell is a valid target considering placement rules
- */
+/** Check if a cell is a valid target considering placement rules */
 export const isCellValidForPlacement = (
   colIndex: number,
   rowIndex: number,
   allowedRows: number[],
-  grid: GridData
+  grid: GridData,
 ): boolean => {
-  // First, check if the row is in the block's allowed rows
-  if (!allowedRows.includes(rowIndex)) {
-    return false;
-  }
+  if (!allowedRows.includes(rowIndex)) return false;
+  if (!hasAnyBlockBeenPlaced(grid)) return rowIndex === FIRST_PLACEMENT_ROW;
 
-  // If no block has been placed yet, only allow middle row of either column
-  if (!hasAnyBlockBeenPlaced(grid)) {
-    return rowIndex === FIRST_PLACEMENT_ROW;
-  }
-
-  // After first placement, only allow diagonal cells
   const occupiedCells = getOccupiedCells(grid);
-  const diagonalCells = getDiagonalCells(occupiedCells, grid.length, grid[0].length);
+  const diagonalCells = getDiagonalCells(
+    occupiedCells,
+    grid.length,
+    grid[0].length,
+  );
   return diagonalCells.has(`${colIndex}-${rowIndex}`);
 };
 
-/**
- * Get alignment based on column index
- */
-export const getAlignment = (colIndex: number): "left" | "right" => {
-  return colIndex === 0 ? "right" : "left";
-};
+/** Get alignment based on column index */
+export const getAlignment = (colIndex: number): "left" | "right" =>
+  colIndex === 0 ? "right" : "left";
 
-/**
- * Check if a cell should be disabled (darkened)
- */
+/** Check if a cell should be disabled (darkened) */
 export const isCellDisabled = (
   colIndex: number,
   rowIndex: number,
-  grid: GridData
+  grid: GridData,
 ): boolean => {
-  if (!hasAnyBlockBeenPlaced(grid)) {
-    // Before first placement, disable all cells except middle row
-    return rowIndex !== FIRST_PLACEMENT_ROW;
-  }
-  // After first placement, disable cells that are not diagonal to any occupied cell
-  // and are not already occupied
+  if (!hasAnyBlockBeenPlaced(grid)) return rowIndex !== FIRST_PLACEMENT_ROW;
+
   const isOccupied = grid[colIndex][rowIndex].length > 0;
   const occupiedCells = getOccupiedCells(grid);
-  const diagonalCells = getDiagonalCells(occupiedCells, grid.length, grid[0].length);
-  const isDiagonal = diagonalCells.has(`${colIndex}-${rowIndex}`);
-  return !isOccupied && !isDiagonal;
+  const diagonalCells = getDiagonalCells(
+    occupiedCells,
+    grid.length,
+    grid[0].length,
+  );
+  return !isOccupied && !diagonalCells.has(`${colIndex}-${rowIndex}`);
 };
 
-/**
- * Find the cell at a given x, y position using data attributes
- */
+/** Find the cell at a given x, y position using data attributes */
 export const findCellAtPosition = (
   x: number,
-  y: number
-): { col: number; row: number } | null => {
+  y: number,
+): CellPosition | null => {
   const elements = document.querySelectorAll("[data-col][data-row]");
-
   for (const element of Array.from(elements)) {
     const rect = element.getBoundingClientRect();
-    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+    if (
+      x >= rect.left &&
+      x <= rect.right &&
+      y >= rect.top &&
+      y <= rect.bottom
+    ) {
       const col = parseInt(element.getAttribute("data-col") || "-1", 10);
       const row = parseInt(element.getAttribute("data-row") || "-1", 10);
-      if (col !== -1 && row !== -1) {
-        return { col, row };
-      }
+      if (col !== -1 && row !== -1) return { col, row };
     }
   }
-
   return null;
 };
 
-/**
- * Find a block in the grid by its ID
- */
+/** Find a block in the grid by its ID */
 export const findBlockInGrid = (
   grid: GridData,
-  id: string
+  id: string,
 ): { col: number; row: number; block: BlockData } | null => {
   for (let colIndex = 0; colIndex < grid.length; colIndex++) {
     for (let rowIndex = 0; rowIndex < grid[colIndex].length; rowIndex++) {
       const block = grid[colIndex][rowIndex].find((b) => b.id === id);
-      if (block) {
-        return { col: colIndex, row: rowIndex, block };
-      }
+      if (block) return { col: colIndex, row: rowIndex, block };
     }
   }
   return null;
 };
 
-/**
- * Clear all blocks from the grid
- */
-export const clearGrid = (numColumns: number, numRows: number): GridData => {
-  return Array.from({ length: numColumns }, () =>
-    Array.from({ length: numRows }, () => [])
+/** Clear all blocks from the grid */
+export const clearGrid = (numColumns: number, numRows: number): GridData =>
+  Array.from({ length: numColumns }, () =>
+    Array.from({ length: numRows }, () => []),
   );
-};
 
-/**
- * Reverse the blocks between columns (swap columns)
- */
-export const reverseColumns = (grid: GridData): GridData => {
-  return [
-    [...grid[1].map((row) => [...row])],
-    [...grid[0].map((row) => [...row])],
-  ];
-};
+/** Reverse the blocks between columns (swap columns) */
+export const reverseColumns = (grid: GridData): GridData => [
+  [...grid[1].map((row) => [...row])],
+  [...grid[0].map((row) => [...row])],
+];
 
-/**
- * Check if a provider block should be highlighted based on hovered grid cell
- */
+/** Check if a provider block should be highlighted based on hovered grid cell */
 export const isProviderBlockHighlighted = (
   block: ProviderBlockData,
   hoveredGridCell: CellPosition | null,
   isDragging: boolean,
-  grid: GridData
+  grid: GridData,
 ): boolean => {
   if (isDragging || !hoveredGridCell) return false;
-
-  // Check if the block can be placed in the hovered cell
-  const canPlaceInRow = block.allowedRows.includes(hoveredGridCell.row);
-  const cellIsValid = isCellValidForPlacement(
-    hoveredGridCell.col,
-    hoveredGridCell.row,
-    block.allowedRows,
-    grid
+  return (
+    block.allowedRows.includes(hoveredGridCell.row) &&
+    isCellValidForPlacement(
+      hoveredGridCell.col,
+      hoveredGridCell.row,
+      block.allowedRows,
+      grid,
+    )
   );
+};
 
-  return canPlaceInRow && cellIsValid;
+/** Calculate Y position percentage from mouse Y within a cell */
+export const calculateYPosition = (
+  mouseY: number,
+  cellRect: DOMRect,
+  headerOffset = 20,
+  bottomOffset = 4,
+): number => {
+  const availableHeight = cellRect.height - headerOffset - bottomOffset;
+  const relativeY = mouseY - cellRect.top - headerOffset;
+  return Math.max(0, Math.min(100, 100 - (relativeY / availableHeight) * 100));
+};
+
+/** Determine which axis based on X position within cell */
+export const findAxisAtPosition = (mouseX: number, cellRect: DOMRect): 1 | 2 =>
+  mouseX - cellRect.left < cellRect.width / 2 ? 1 : 2;
+
+/** Find cell element and calculate position data for a block drop */
+export const findCellAndPositionData = (
+  x: number,
+  y: number,
+): { col: number; row: number; axis: 1 | 2; yPosition: number } | null => {
+  const elements = document.querySelectorAll("[data-col][data-row]");
+
+  for (const element of Array.from(elements)) {
+    const rect = element.getBoundingClientRect();
+    if (
+      x >= rect.left &&
+      x <= rect.right &&
+      y >= rect.top &&
+      y <= rect.bottom
+    ) {
+      const col = parseInt(element.getAttribute("data-col") || "-1", 10);
+      const row = parseInt(element.getAttribute("data-row") || "-1", 10);
+      if (col !== -1 && row !== -1) {
+        const axis = findAxisAtPosition(x, rect);
+        const yPosition = calculateYPosition(y, rect);
+        return { col, row, axis, yPosition };
+      }
+    }
+  }
+
+  return null;
 };

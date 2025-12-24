@@ -1,0 +1,150 @@
+// Order type definitions with default values for the card assembly grid
+
+export type AxisType = "trigger" | "limit";
+
+export interface OrderTypeDefinition {
+  type: string;
+  abrv: string;
+  icon?: string;
+  allowedRows: number[];
+  axes: AxisType[];
+  // Default Y positions when placed (0-100%)
+  // Only applicable for blocks with axes
+  defaults?: {
+    trigger?: number; // Default trigger axis position
+    limit?: number; // Default limit axis position
+  };
+}
+
+// Order type definitions
+export const ORDER_TYPES: OrderTypeDefinition[] = [
+  {
+    type: "limit",
+    abrv: "Lmt",
+    allowedRows: [0, 1],
+    axes: ["limit"],
+    defaults: {
+      limit: 50,
+    },
+  },
+  {
+    type: "market",
+    abrv: "Mkt",
+    allowedRows: [1],
+    axes: [], // No axes - executes at market price
+    // No defaults - market orders don't have price levels
+  },
+  {
+    type: "iceberg",
+    abrv: "Ice",
+    allowedRows: [1],
+    axes: ["limit"],
+    defaults: {
+      limit: 50,
+    },
+  },
+  {
+    type: "stop-loss",
+    abrv: "SL",
+    allowedRows: [1, 2],
+    axes: ["trigger"],
+    defaults: {
+      trigger: 25, // Default to 25% below (drawdown territory)
+    },
+  },
+  {
+    type: "stop-loss-limit",
+    abrv: "SL-Lmt",
+    allowedRows: [1, 2],
+    axes: ["trigger", "limit"],
+    defaults: {
+      trigger: 25,
+      limit: 20, // Limit slightly below trigger
+    },
+  },
+  {
+    type: "take-profit",
+    abrv: "TP",
+    allowedRows: [0, 1],
+    axes: ["trigger"],
+    defaults: {
+      trigger: 75, // Default to 75% (upside territory)
+    },
+  },
+  {
+    type: "take-profit-limit",
+    abrv: "TP-Lmt",
+    allowedRows: [0, 1],
+    axes: ["trigger", "limit"],
+    defaults: {
+      trigger: 75,
+      limit: 70, // Limit slightly below trigger
+    },
+  },
+  {
+    type: "trailing-stop",
+    abrv: "TS",
+    allowedRows: [1, 2],
+    axes: ["trigger"],
+    defaults: {
+      trigger: 30, // Default trailing distance
+    },
+  },
+  {
+    type: "trailing-stop-limit",
+    abrv: "TS-Lmt",
+    allowedRows: [1, 2],
+    axes: ["trigger", "limit"],
+    defaults: {
+      trigger: 30,
+      limit: 25,
+    },
+  },
+];
+
+// Column headers for the grid
+export const COLUMN_HEADERS = ["Entry", "Exit"];
+
+// Row labels for display/debug
+export const ROW_LABELS = ["Top", "Middle", "Bottom"];
+
+// Grid dimensions
+export const GRID_CONFIG = {
+  numColumns: 2,
+  numRows: 3,
+  firstPlacementRow: 1, // Middle row
+};
+
+// Helper to get human-readable position string
+export const getPositionLabel = (col: number, row: number): string => {
+  const colLabel = COLUMN_HEADERS[col] ?? `Col${col}`;
+  const rowLabel = ROW_LABELS[row] ?? `Row${row}`;
+  return `${colLabel} / ${rowLabel}`;
+};
+
+// Helper function to get an order type by its type string
+export const getOrderType = (type: string): OrderTypeDefinition | undefined => {
+  return ORDER_TYPES.find((ot) => ot.type === type);
+};
+
+// Helper function to get default position for an axis
+export const getDefaultPosition = (
+  orderType: OrderTypeDefinition,
+  axis: "trigger" | "limit",
+): number => {
+  if (!orderType.defaults) return 50; // Fallback default
+  return orderType.defaults[axis] ?? 50;
+};
+
+// Helper to check if order type has specific axis
+export const hasAxis = (
+  orderType: OrderTypeDefinition,
+  axis: AxisType,
+): boolean => {
+  return orderType.axes.includes(axis);
+};
+
+// Helper to check if order type has any axes (i.e., needs price data)
+export const hasPriceData = (orderType: OrderTypeDefinition): boolean => {
+  return orderType.axes.length > 0;
+};
