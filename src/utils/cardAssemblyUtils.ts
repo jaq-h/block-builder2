@@ -4,6 +4,8 @@ import { GRID_CONFIG } from "../data/orderTypes";
 // Types
 export interface BlockData {
   id: string;
+  orderType: string; // Order type identifier (e.g., "limit", "stop-loss-limit")
+  label: string; // Display label (e.g., "Limit", "Stop Loss Limit")
   icon?: string;
   abrv: string;
   allowedRows: number[];
@@ -228,22 +230,37 @@ export const isProviderBlockHighlighted = (
 
 // Layout constants matching GridCell.tsx
 const HEADER_HEIGHT = 36;
-const BOTTOM_PADDING = 20;
+const MARKET_PADDING = 20; // Space for market axis and price label
 const BLOCK_HEIGHT = 40;
+const MARKET_GAP = 10; // Gap between market axis and 0% block position
 
-/** Helper to determine if scale should be descending */
+// Helper functions for positioning calculations (matching GridCell.tsx)
+const getTrackStart = (isDescending: boolean) =>
+  isDescending ? MARKET_PADDING + MARKET_GAP : 0;
+
+const getTrackEnd = (isDescending: boolean) =>
+  isDescending ? 0 : MARKET_PADDING + MARKET_GAP;
+
+/** Helper to determine if scale should be descending (- sign) or ascending (+ sign) */
 export const shouldBeDescending = (
   rowIndex: number,
   colIndex: number,
 ): boolean => {
-  // Row 0 (Top/Profit): ascending (0% at bottom, 100% at top)
-  // Row 2 (Bottom/Stop-loss): descending (0% at top, 100% at bottom)
-  // Row 1 (Middle): depends on column
-  //   - Entry (col 0): descending
-  //   - Exit (col 1): ascending
-  if (rowIndex === 0) return false; // Top row: ascending
-  if (rowIndex === 2) return true; // Bottom row: descending
-  return colIndex === 0; // Middle row: Entry column descending
+  // colIndex 0 = Buy (Entry), colIndex 1 = Sell (Exit)
+  // Descending (-): market axis at top, 0% near top, 100% at bottom
+  // Ascending (+): market axis at bottom, 0% near bottom, 100% at top
+  //
+  // Top row:    { buy: -, sell: + }
+  // Middle row: { buy: -, sell: + }
+  // Bottom row: { buy: +, sell: - }
+  const isBuy = colIndex === 0;
+
+  if (rowIndex === 2) {
+    // Bottom row: buy is ascending (+), sell is descending (-)
+    return !isBuy;
+  }
+  // Top and Middle rows: buy is descending (-), sell is ascending (+)
+  return isBuy;
 };
 
 /** Calculate Y position percentage from mouse Y within a cell */
@@ -252,20 +269,23 @@ export const calculateYPosition = (
   cellRect: DOMRect,
   isDescending: boolean = false,
 ): number => {
-  const trackTop = cellRect.top + HEADER_HEIGHT + BLOCK_HEIGHT / 2;
-  const trackBottom = cellRect.bottom - BOTTOM_PADDING - BLOCK_HEIGHT / 2;
+  const trackTop =
+    cellRect.top +
+    HEADER_HEIGHT +
+    getTrackStart(isDescending) +
+    BLOCK_HEIGHT / 2;
+  const trackBottom =
+    cellRect.bottom - getTrackEnd(isDescending) - BLOCK_HEIGHT / 2;
   const availableHeight = trackBottom - trackTop;
 
   const relativeY = mouseY - trackTop;
   const clampedRelativeY = Math.max(0, Math.min(availableHeight, relativeY));
 
-  if (isDescending) {
-    // Descending: 0% at top, 100% at bottom
-    return (clampedRelativeY / availableHeight) * 100;
-  } else {
-    // Ascending: 100% at top, 0% at bottom
-    return 100 - (clampedRelativeY / availableHeight) * 100;
-  }
+  // Descending: 0% at top, 100% at bottom
+  // Ascending: 100% at top, 0% at bottom
+  return isDescending
+    ? (clampedRelativeY / availableHeight) * 100
+    : 100 - (clampedRelativeY / availableHeight) * 100;
 };
 
 /** Determine which axis based on X position within cell */

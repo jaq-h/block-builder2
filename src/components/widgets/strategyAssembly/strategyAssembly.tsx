@@ -36,6 +36,7 @@ import {
   UtilityButton,
   DebugPanel,
 } from "./strategyAssembly.styles";
+import { useKrakenAPI } from "../../../hooks/useKrakenAPI";
 
 // Props for the main component
 interface StrategyAssemblyProps {
@@ -63,6 +64,13 @@ const StrategyAssembly: React.FC<StrategyAssemblyProps> = ({
 
 // Inner component that consumes the context
 const StrategyAssemblyInner: React.FC = () => {
+  // Kraken API integration for current price
+  const { currentPrice, tickerError } = useKrakenAPI({
+    symbol: "BTC/USD",
+    autoConnect: true,
+    pollInterval: 30000, // Update every 30 seconds
+  });
+
   const {
     grid,
     orderConfig,
@@ -491,6 +499,8 @@ const StrategyAssemblyInner: React.FC = () => {
                     rowLabel={getRowLabel(rowIndex)}
                     showPrimaryWarning={showPrimaryWarning && rowIndex === 1}
                     tint={cellTint}
+                    currentPrice={currentPrice}
+                    priceError={tickerError}
                     onMouseEnter={() =>
                       handleGridCellMouseEnter(colIndex, rowIndex)
                     }

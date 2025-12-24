@@ -24,13 +24,15 @@ export const createBlocksFromOrderType = (
   const { baseId, counter } = context;
   const blocks: BlockData[] = [];
   let currentCounter = counter;
-  const { type, icon, abrv, allowedRows, axes } = orderType;
+  const { type, label, icon, abrv, allowedRows, axes } = orderType;
 
   // Case 1: No axes (Market order) - no price data
   if (axes.length === 0) {
     currentCounter += 1;
     blocks.push({
       id: `${baseId}-${type}-${currentCounter}`,
+      orderType: type,
+      label,
       icon,
       abrv,
       allowedRows,
@@ -44,6 +46,8 @@ export const createBlocksFromOrderType = (
     currentCounter += 1;
     blocks.push({
       id: `${baseId}-${type}-${currentCounter}`,
+      orderType: type,
+      label,
       icon,
       abrv,
       allowedRows,
@@ -57,6 +61,8 @@ export const createBlocksFromOrderType = (
     currentCounter += 1;
     blocks.push({
       id: `${baseId}-${type}-${currentCounter}`,
+      orderType: type,
+      label,
       icon,
       abrv,
       allowedRows,
@@ -70,6 +76,8 @@ export const createBlocksFromOrderType = (
     currentCounter += 1;
     blocks.push({
       id: `${baseId}-${type}-${currentCounter}`,
+      orderType: type,
+      label,
       icon,
       abrv,
       allowedRows,
@@ -81,6 +89,8 @@ export const createBlocksFromOrderType = (
     currentCounter += 1;
     blocks.push({
       id: `${baseId}-${type}-limit-${currentCounter}`,
+      orderType: type,
+      label,
       icon,
       abrv: `${abrv}-L`,
       allowedRows,

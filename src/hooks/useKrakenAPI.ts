@@ -169,10 +169,13 @@ export const useKrakenAPI = (
   }, []);
 
   // ============================================================================
-  // Auto-connect effect
+  // Auto-connect and initial price fetch effect
   // ============================================================================
 
   useEffect(() => {
+    // Fetch price immediately on mount (don't wait for WebSocket)
+    refreshTicker();
+
     if (autoConnect) {
       connect();
     }
@@ -190,11 +193,8 @@ export const useKrakenAPI = (
   // ============================================================================
 
   useEffect(() => {
-    if (pollInterval > 0 && isConnected) {
-      // Initial fetch
-      refreshTicker();
-
-      // Set up polling
+    if (pollInterval > 0) {
+      // Set up polling (initial fetch already happened in auto-connect effect)
       pollIntervalRef.current = setInterval(() => {
         refreshTicker();
       }, pollInterval);
@@ -206,7 +206,7 @@ export const useKrakenAPI = (
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pollInterval, isConnected, symbol]);
+  }, [pollInterval, symbol]);
 
   // ============================================================================
   // Connection methods
